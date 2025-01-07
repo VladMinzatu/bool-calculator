@@ -1,11 +1,11 @@
 package evaluation
 
+import "fmt"
+
 type TokenType int
 
 const (
-	TokenInvalid TokenType = iota
-
-	TokenValue
+	TokenValue TokenType = iota
 	TokenVariable
 
 	// Gates
@@ -39,16 +39,18 @@ type Token struct {
 	literal   string
 }
 
-func ParseTokens(text string) []Token {
+func ParseTokens(text string) ([]Token, error) {
 	result := []Token{}
-	tok, idx := nextToken(text, 0)
-	for ; tok.tokenType != tokenEOF; tok, idx = nextToken(text, idx) {
+	for tok, idx, err := nextToken(text, 0); tok.tokenType != tokenEOF; tok, idx, err = nextToken(text, idx) {
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, tok)
 	}
-	return result
+	return result, nil
 }
 
-func nextToken(text string, index int) (Token, int) {
+func nextToken(text string, index int) (Token, int, error) {
 	var token Token
 	currentIndex := index
 
@@ -59,7 +61,7 @@ func nextToken(text string, index int) (Token, int) {
 
 	// Return EOF if no more input
 	if currentIndex >= len(text) {
-		return Token{tokenType: tokenEOF, literal: ""}, currentIndex
+		return Token{tokenType: tokenEOF, literal: ""}, currentIndex, nil
 	}
 
 	// Get first character
@@ -91,11 +93,11 @@ func nextToken(text string, index int) (Token, int) {
 				token = Token{tokenType: TokenVariable, literal: identifier}
 			}
 		} else {
-			token = Token{tokenType: TokenInvalid, literal: string(ch)}
+			return token, currentIndex, fmt.Errorf("invalid character encountered: %c", ch)
 		}
 	}
 
-	return token, currentIndex
+	return token, currentIndex, nil
 }
 
 func isWhitespace(ch byte) bool {

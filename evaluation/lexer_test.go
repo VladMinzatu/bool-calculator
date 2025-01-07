@@ -81,21 +81,6 @@ func TestTokenizer(t *testing.T) {
 			},
 		},
 		{
-			text: " dmux(foo_bar,1,XOR) ",
-			expectedTokens: []Token{
-				{tokenType: TokenDmux, literal: "dmux"},
-				{tokenType: TokenLparan, literal: "("},
-				{tokenType: TokenVariable, literal: "foo"},
-				{tokenType: TokenInvalid, literal: "_"}, // underscores in variable names not allowed
-				{tokenType: TokenVariable, literal: "bar"},
-				{tokenType: TokenComma, literal: ","},
-				{tokenType: TokenValue, literal: "1"},
-				{tokenType: TokenComma, literal: ","},
-				{tokenType: TokenVariable, literal: "XOR"}, // uppercase ok for variables, but gate names are case sensitive
-				{tokenType: TokenRparan, literal: ")"},
-			},
-		},
-		{
 			text: "NOT(1)", // case sensitive keywords
 			expectedTokens: []Token{
 				{tokenType: TokenVariable, literal: "NOT"},
@@ -104,28 +89,30 @@ func TestTokenizer(t *testing.T) {
 				{tokenType: TokenRparan, literal: ")"},
 			},
 		},
-		{
-			text: "2and3", // invalid value + keyword as part of identifier
-			expectedTokens: []Token{
-				{tokenType: TokenInvalid, literal: "2"},
-				{tokenType: TokenAnd, literal: "and"},
-				{tokenType: TokenInvalid, literal: "3"},
-			},
-		},
-		{
-			text: "@#$", // multiple invalid characters
-			expectedTokens: []Token{
-				{tokenType: TokenInvalid, literal: "@"},
-				{tokenType: TokenInvalid, literal: "#"},
-				{tokenType: TokenInvalid, literal: "$"},
-			},
-		},
 	}
 
 	for i, tc := range testCases {
-		actual := ParseTokens(tc.text)
+		actual, err := ParseTokens(tc.text)
+		if err != nil {
+			t.Errorf("Got an unexpected error in test case %d: Error: %v", i, err)
+		}
 		if !reflect.DeepEqual(actual, tc.expectedTokens) {
 			t.Errorf("Error in test case %d: Expected %v, but got %v", i, tc.expectedTokens, actual)
+		}
+	}
+}
+
+func TestTokenizerErrors(t *testing.T) {
+	testCases := []string{
+		" dmux(foo_bar,1,XOR) ", // underscore not allowed in variable names
+		"2and3",                 // invalid value + keyword as part of identifier
+		"@#$",                   // multiple invalid characters
+	}
+
+	for _, tc := range testCases {
+		tok, err := ParseTokens(tc)
+		if err == nil {
+			t.Errorf("Expected to get an error for string \"%s\", but got %v", tc, tok)
 		}
 	}
 }
