@@ -24,6 +24,19 @@ const (
 	tokenEOF // used only internally, won't be returned by our parser
 )
 
+func (t TokenType) String() string {
+	switch t {
+	case TokenLparan:
+		return "("
+	case TokenRparan:
+		return ")"
+	case TokenComma:
+		return ","
+	default:
+		return "UNHANDLED"
+	}
+}
+
 var keywords = map[string]TokenType{
 	"nand": TokenNand,
 	"not":  TokenNot,
