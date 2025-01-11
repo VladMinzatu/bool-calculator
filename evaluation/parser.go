@@ -6,8 +6,8 @@ import (
 )
 
 type Expression interface {
-	numOutputs() int
-	numInputs() int
+	NumOutputs() int
+	Evaluate() []bool
 }
 
 func ParseExpression(input string) (Expression, error) {
@@ -56,30 +56,34 @@ func (p *parser) parse() (Expression, error) {
 	case TokenNot:
 		exprs, err := p.parseArgs(1)
 		if err != nil {
-			return nil, err
+			return nil, argsError(tok, err)
 		}
 		return &NotExpression{expression: exprs[0]}, nil
 	case TokenNand, TokenAnd, TokenOr, TokenXor:
 		exprs, err := p.parseArgs(2)
 		if err != nil {
-			return nil, err
+			return nil, argsError(tok, err)
 		}
 		return &BinaryExpression{tok.tokenType, exprs}, nil
 	case TokenMux:
 		exprs, err := p.parseArgs(3)
 		if err != nil {
-			return nil, err
+			return nil, argsError(tok, err)
 		}
 		return &MuxExpression{exprs}, nil
 	case TokenDmux:
 		exprs, err := p.parseArgs(2)
 		if err != nil {
-			return nil, err
+			return nil, argsError(tok, err)
 		}
 		return &DmuxExpression{exprs}, nil
 	default:
 		return nil, fmt.Errorf("invalid single token expression")
 	}
+}
+
+func argsError(tok Token, err error) error {
+	return fmt.Errorf("Error parsing arguments for %s gate: %w", tok.literal, err)
 }
 
 func (p *parser) parseArgs(expectedInputs int) ([]Expression, error) {
@@ -95,7 +99,7 @@ func (p *parser) parseArgs(expectedInputs int) ([]Expression, error) {
 			return nil, err
 		}
 		result = append(result, expr)
-		expectedInputs -= expr.numOutputs()
+		expectedInputs -= expr.NumOutputs()
 
 		if expectedInputs < 0 {
 			return nil, fmt.Errorf("too many inputs for gate")
@@ -141,36 +145,40 @@ type LiteralExpression struct {
 	value bool
 }
 
-func (e *LiteralExpression) numOutputs() int {
+func (e *LiteralExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *LiteralExpression) numInputs() int {
-	return 0
+func (e *LiteralExpression) Evaluate() []bool {
+	return []bool{e.value}
 }
 
 type VariableExpression struct {
 	variableName string
 }
 
-func (e *VariableExpression) numOutputs() int {
+func (e *VariableExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *VariableExpression) numInputs() int {
-	return 0
+func (e *VariableExpression) Evaluate() []bool {
+	panic("TODO: variable support not implemented in expressions evaluation yet")
 }
 
 type NotExpression struct {
 	expression Expression
 }
 
-func (e *NotExpression) numOutputs() int {
+func (e *NotExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *NotExpression) numInputs() int {
-	return 1
+func (e *NotExpression) Evaluate() []bool {
+	in := e.expression.Evaluate()
+	if len(in) != 1 {
+		panic("parser messed up. Not got more than 1 input during evaluation")
+	}
+	return []bool{Not(in[0])}
 }
 
 type BinaryExpression struct {
@@ -178,34 +186,71 @@ type BinaryExpression struct {
 	expressions []Expression
 }
 
-func (e *BinaryExpression) numOutputs() int {
+func (e *BinaryExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *BinaryExpression) numInputs() int {
-	return 2
+func (e *BinaryExpression) Evaluate() []bool {
+	in := collectInputs(e.expressions)
+
+	if len(in) != 2 {
+		panic("parser messed up. Binary operator didn't get 2 inputs")
+	}
+	switch e.op {
+	case TokenNand:
+		return []bool{Nand(in[0], in[1])}
+	case TokenAnd:
+		return []bool{And(in[0], in[1])}
+	case TokenOr:
+		return []bool{Or(in[0], in[1])}
+	case TokenXor:
+		return []bool{Xor(in[0], in[1])}
+	default:
+		errorString := fmt.Sprintf("evaluation of binary expression %d not implemented", e.op)
+		panic(errorString)
+	}
 }
 
 type MuxExpression struct {
 	expressions []Expression
 }
 
-func (e *MuxExpression) numOutputs() int {
+func (e *MuxExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *MuxExpression) numInputs() int {
-	return 3
+func (e *MuxExpression) Evaluate() []bool {
+	in := collectInputs(e.expressions)
+	if len(in) != 3 {
+		panic("parser messed up. Mux operator didn't get 3 inputs")
+	}
+	return []bool{Mux(in[0], in[1], in[2])}
 }
 
 type DmuxExpression struct {
 	expressions []Expression
 }
 
-func (e *DmuxExpression) numOutputs() int {
+func (e *DmuxExpression) NumOutputs() int {
 	return 2
 }
 
-func (e *DmuxExpression) numInputs() int {
-	return 2
+func (e *DmuxExpression) Evaluate() []bool {
+	in := collectInputs(e.expressions)
+	if len(in) != 2 {
+		panic("parser messed up. Dmux operator didn't get 2 inputs")
+	}
+	out1, out2 := Dmux(in[0], in[1])
+	return []bool{out1, out2}
+}
+
+func collectInputs(expressions []Expression) []bool {
+	result := []bool{}
+	for _, expr := range expressions {
+		exprOuts := expr.Evaluate()
+		for _, b := range exprOuts {
+			result = append(result, b)
+		}
+	}
+	return result
 }

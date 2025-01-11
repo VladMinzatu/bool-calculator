@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/VladMinzatu/bool-calculator/evaluation"
+)
 
 func main() {
-	fmt.Println(Not(And(true, false)))
+	expression, err := evaluation.ParseExpression("dmux(and(1, not(0)), 0)")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(expression.Evaluate())
 }
