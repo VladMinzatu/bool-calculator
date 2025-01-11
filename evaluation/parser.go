@@ -10,32 +10,39 @@ type Expression interface {
 	Evaluate() []bool
 }
 
-func ParseExpression(input string) (Expression, error) {
+type VariableSet map[string]bool
+
+func ParseExpression(input string) (Expression, VariableSet, error) {
 	tokens, err := ParseTokens(input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract tokens from input: %w", err)
+		return nil, nil, fmt.Errorf("failed to extract tokens from input: %w", err)
 	}
 
 	if len(tokens) == 0 {
-		return nil, fmt.Errorf("empty expression cannot be evaluated")
+		return nil, nil, fmt.Errorf("empty expression cannot be evaluated")
+	}
+
+	gateTokens := map[TokenType]bool{
+		TokenNand: true,
+		TokenNot:  true,
+		TokenAnd:  true,
+		TokenOr:   true,
+		TokenXor:  true,
+		TokenMux:  true,
+		TokenDmux: true,
 	}
 
 	if _, ok := gateTokens[tokens[0].tokenType]; !ok && len(tokens) > 1 {
-		return nil, fmt.Errorf("Expression must either start with a gate name or contain exactly one literal or variable name")
+		return nil, nil, fmt.Errorf("Expression must either start with a gate name or contain exactly one literal or variable name")
 	}
 
 	parser := parser{tokens: tokens, pos: -1}
-	return parser.parse()
-}
-
-var gateTokens map[TokenType]bool = map[TokenType]bool{
-	TokenNand: true,
-	TokenNot:  true,
-	TokenAnd:  true,
-	TokenOr:   true,
-	TokenXor:  true,
-	TokenMux:  true,
-	TokenDmux: true,
+	variableSet := map[string]bool{}
+	expression, err := parser.parse(variableSet)
+	if err != nil {
+		return nil, nil, err
+	}
+	return expression, variableSet, nil
 }
 
 type parser struct {
@@ -43,7 +50,7 @@ type parser struct {
 	pos    int
 }
 
-func (p *parser) parse() (Expression, error) {
+func (p *parser) parse(variableCollector VariableSet) (Expression, error) {
 	p.pos++
 	tok := p.tokens[p.pos]
 
@@ -52,33 +59,35 @@ func (p *parser) parse() (Expression, error) {
 		value := tok.literal == "1"
 		return &LiteralExpression{value: value}, nil
 	case TokenVariable:
+		variableCollector[tok.literal] = true
 		return &VariableExpression{variableName: tok.literal}, nil
 	case TokenNot:
-		exprs, err := p.parseArgs(1)
+		exprs, err := p.parseArgs(1, variableCollector)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &NotExpression{expression: exprs[0]}, nil
 	case TokenNand, TokenAnd, TokenOr, TokenXor:
-		exprs, err := p.parseArgs(2)
+		exprs, err := p.parseArgs(2, variableCollector)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &BinaryExpression{tok.tokenType, exprs}, nil
 	case TokenMux:
-		exprs, err := p.parseArgs(3)
+		exprs, err := p.parseArgs(3, variableCollector)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &MuxExpression{exprs}, nil
 	case TokenDmux:
-		exprs, err := p.parseArgs(2)
+		exprs, err := p.parseArgs(2, variableCollector)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &DmuxExpression{exprs}, nil
 	default:
-		return nil, fmt.Errorf("invalid single token expression")
+		errorString := fmt.Sprintf("invalid token type: %v", tok)
+		return nil, fmt.Errorf(errorString)
 	}
 }
 
@@ -86,7 +95,7 @@ func argsError(tok Token, err error) error {
 	return fmt.Errorf("Error parsing arguments for %s gate: %w", tok.literal, err)
 }
 
-func (p *parser) parseArgs(expectedInputs int) ([]Expression, error) {
+func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet) ([]Expression, error) {
 	err := p.expect(TokenLparan)
 	if err != nil {
 		return nil, err
@@ -94,7 +103,7 @@ func (p *parser) parseArgs(expectedInputs int) ([]Expression, error) {
 
 	result := []Expression{}
 	for expectedInputs > 0 {
-		expr, err := p.parse()
+		expr, err := p.parse(variableCollector)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +171,7 @@ func (e *VariableExpression) NumOutputs() int {
 }
 
 func (e *VariableExpression) Evaluate() []bool {
-	panic("TODO: variable support not implemented in expressions evaluation yet")
+	return []bool{true} //TODO: implement proper variable handling in evaluation
 }
 
 type NotExpression struct {
