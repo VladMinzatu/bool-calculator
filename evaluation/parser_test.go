@@ -157,14 +157,14 @@ func TestParsingAndEvaluation(t *testing.T) {
 				return
 			}
 
-			got := expr.Evaluate()
-			if !reflect.DeepEqual(got, tc.expectedResult) {
-				t.Errorf("Expression.Evaluate() = %v, expected %v", got, tc.expectedResult)
-			}
-
 			gotVariables := vars
 			if !reflect.DeepEqual(gotVariables, tc.expectedVariables) {
 				t.Errorf("Expression's variable set wasn't as expected. Got %v, expected %v", gotVariables, tc.expectedVariables)
+			}
+
+			got := expr.Evaluate()
+			if !reflect.DeepEqual(got, tc.expectedResult) {
+				t.Errorf("Expression.Evaluate() = %v, expected %v", got, tc.expectedResult)
 			}
 		})
 	}
