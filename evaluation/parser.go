@@ -1,6 +1,7 @@
 package evaluation
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -87,12 +88,12 @@ func (p *parser) parse(variableCollector VariableSet) (Expression, error) {
 		return &DmuxExpression{exprs}, nil
 	default:
 		errorString := fmt.Sprintf("invalid token type: %v", tok)
-		return nil, fmt.Errorf(errorString)
+		return nil, errors.New(errorString)
 	}
 }
 
 func argsError(tok Token, err error) error {
-	return fmt.Errorf("Error parsing arguments for %s gate: %w", tok.literal, err)
+	return fmt.Errorf("error parsing arguments for %s gate: %w", tok.literal, err)
 }
 
 func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet) ([]Expression, error) {
@@ -257,9 +258,7 @@ func collectInputs(expressions []Expression) []bool {
 	result := []bool{}
 	for _, expr := range expressions {
 		exprOuts := expr.Evaluate()
-		for _, b := range exprOuts {
-			result = append(result, b)
-		}
+		result = append(result, exprOuts...)
 	}
 	return result
 }

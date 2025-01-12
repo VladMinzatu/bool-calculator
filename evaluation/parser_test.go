@@ -122,6 +122,11 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr: true,
 		},
 		{
+			name:       "missing arguments with variables",
+			input:      "and(X)",
+			expectsErr: true,
+		},
+		{
 			name:       "invalid token",
 			input:      "and(1,10)",
 			expectsErr: true,
@@ -129,6 +134,11 @@ func TestParsingAndEvaluation(t *testing.T) {
 		{
 			name:       "too many arguments",
 			input:      "and(1,1,1)",
+			expectsErr: true,
+		},
+		{
+			name:       "too many arguments with variables",
+			input:      "and(1,X,1)",
 			expectsErr: true,
 		},
 		{
