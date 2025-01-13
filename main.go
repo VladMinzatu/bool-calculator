@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/VladMinzatu/bool-calculator/evaluation"
 )
@@ -12,5 +13,10 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(expression.Evaluate())
+	val, err := expression.Evaluate(map[string]bool{})
+	if err != nil {
+		fmt.Printf("error occurred evaluating expression: %v", err)
+		os.Exit(1)
+	}
+	fmt.Println(val)
 }

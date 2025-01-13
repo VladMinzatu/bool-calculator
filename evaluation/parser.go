@@ -6,9 +6,14 @@ import (
 	"strings"
 )
 
+// TODO: revise error handling in general
+// but in particular, evaluation returns only one kind of error to be handled by client outside the package (use case for sentinel errors?)
+
+// TODO: maybe refactoring to split evaluation and parsing??
+
 type Expression interface {
 	NumOutputs() int
-	Evaluate() []bool
+	Evaluate(args map[string]bool) ([]bool, error)
 }
 
 type VariableSet map[string]bool
@@ -159,8 +164,8 @@ func (e *LiteralExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *LiteralExpression) Evaluate() []bool {
-	return []bool{e.value}
+func (e *LiteralExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	return []bool{e.value}, nil
 }
 
 type VariableExpression struct {
@@ -171,8 +176,12 @@ func (e *VariableExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *VariableExpression) Evaluate() []bool {
-	return []bool{true} //TODO: implement proper variable handling in evaluation
+func (e *VariableExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	val, ok := args[e.variableName]
+	if !ok {
+		return nil, fmt.Errorf("cannot evaluate expression: no value provided for variable %v", e.variableName)
+	}
+	return []bool{val}, nil
 }
 
 type NotExpression struct {
@@ -183,12 +192,15 @@ func (e *NotExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *NotExpression) Evaluate() []bool {
-	in := e.expression.Evaluate()
+func (e *NotExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	in, err := e.expression.Evaluate(args)
+	if err != nil {
+		return nil, err
+	}
 	if len(in) != 1 {
 		panic("parser messed up. Not got more than 1 input during evaluation")
 	}
-	return []bool{Not(in[0])}
+	return []bool{Not(in[0])}, nil
 }
 
 type BinaryExpression struct {
@@ -200,21 +212,23 @@ func (e *BinaryExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *BinaryExpression) Evaluate() []bool {
-	in := collectInputs(e.expressions)
-
+func (e *BinaryExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	in, err := collectInputs(e.expressions, args)
+	if err != nil {
+		return nil, err
+	}
 	if len(in) != 2 {
 		panic("parser messed up. Binary operator didn't get 2 inputs")
 	}
 	switch e.op {
 	case TokenNand:
-		return []bool{Nand(in[0], in[1])}
+		return []bool{Nand(in[0], in[1])}, nil
 	case TokenAnd:
-		return []bool{And(in[0], in[1])}
+		return []bool{And(in[0], in[1])}, nil
 	case TokenOr:
-		return []bool{Or(in[0], in[1])}
+		return []bool{Or(in[0], in[1])}, nil
 	case TokenXor:
-		return []bool{Xor(in[0], in[1])}
+		return []bool{Xor(in[0], in[1])}, nil
 	default:
 		errorString := fmt.Sprintf("evaluation of binary expression %d not implemented", e.op)
 		panic(errorString)
@@ -229,12 +243,15 @@ func (e *MuxExpression) NumOutputs() int {
 	return 1
 }
 
-func (e *MuxExpression) Evaluate() []bool {
-	in := collectInputs(e.expressions)
+func (e *MuxExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	in, err := collectInputs(e.expressions, args)
+	if err != nil {
+		return nil, err
+	}
 	if len(in) != 3 {
 		panic("parser messed up. Mux operator didn't get 3 inputs")
 	}
-	return []bool{Mux(in[0], in[1], in[2])}
+	return []bool{Mux(in[0], in[1], in[2])}, nil
 }
 
 type DmuxExpression struct {
@@ -245,20 +262,26 @@ func (e *DmuxExpression) NumOutputs() int {
 	return 2
 }
 
-func (e *DmuxExpression) Evaluate() []bool {
-	in := collectInputs(e.expressions)
+func (e *DmuxExpression) Evaluate(args map[string]bool) ([]bool, error) {
+	in, err := collectInputs(e.expressions, args)
+	if err != nil {
+		return nil, err
+	}
 	if len(in) != 2 {
 		panic("parser messed up. Dmux operator didn't get 2 inputs")
 	}
 	out1, out2 := Dmux(in[0], in[1])
-	return []bool{out1, out2}
+	return []bool{out1, out2}, nil
 }
 
-func collectInputs(expressions []Expression) []bool {
+func collectInputs(expressions []Expression, args map[string]bool) ([]bool, error) {
 	result := []bool{}
 	for _, expr := range expressions {
-		exprOuts := expr.Evaluate()
+		exprOuts, err := expr.Evaluate(args)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, exprOuts...)
 	}
-	return result
+	return result, nil
 }
