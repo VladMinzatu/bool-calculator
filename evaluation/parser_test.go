@@ -12,6 +12,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 		expectsErr        bool
 		expectedResult    []bool
 		expectedVariables VariableSet
+		evaluationArgs    map[string]bool
+		expectsEvalError  bool
 	}{
 		{
 			name:              "simple literal 1",
@@ -19,6 +21,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "simple literal 0",
@@ -26,6 +30,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "not gate",
@@ -33,6 +39,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "and gate",
@@ -40,6 +48,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "and gate2",
@@ -47,6 +57,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "or gate",
@@ -54,6 +66,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "xor gate",
@@ -61,6 +75,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "nand gate",
@@ -68,6 +84,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "mux gate",
@@ -75,6 +93,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "dmux gate",
@@ -82,6 +102,8 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{true, false},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "nested expression",
@@ -89,27 +111,62 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr:        false,
 			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  false,
 		},
 		{
 			name:              "variables",
 			input:             "not(X)",
 			expectsErr:        false,
-			expectedResult:    []bool{false}, //TODO: update this when evaluation properly takes into consideration variables
+			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{"X": true},
+			evaluationArgs:    map[string]bool{"X": false},
+			expectsEvalError:  false,
+		},
+		{
+			name:              "variables but missing args",
+			input:             "not(X)",
+			expectsErr:        false,
+			expectedResult:    []bool{true},
+			expectedVariables: map[string]bool{"X": true},
+			evaluationArgs:    map[string]bool{},
+			expectsEvalError:  true,
 		},
 		{
 			name:              "nand with variables",
 			input:             "nand(X,Y)",
 			expectsErr:        false,
-			expectedResult:    []bool{false}, //TODO: update this when evaluation properly takes into consideration variables
+			expectedResult:    []bool{true},
 			expectedVariables: map[string]bool{"X": true, "Y": true},
+			evaluationArgs:    map[string]bool{"X": false, "Y": true},
+			expectsEvalError:  false,
+		},
+		{
+			name:              "nand with variables but missing args",
+			input:             "nand(X,Y)",
+			expectsErr:        false,
+			expectedResult:    []bool{true},
+			expectedVariables: map[string]bool{"X": true, "Y": true},
+			evaluationArgs:    map[string]bool{"A": false, "Y": true},
+			expectsEvalError:  true,
 		},
 		{
 			name:              "mix variables and values",
 			input:             "mux(X,Y,1)",
 			expectsErr:        false,
-			expectedResult:    []bool{true}, //TODO: update this when evaluation properly takes into consideration variables
+			expectedResult:    []bool{false},
 			expectedVariables: map[string]bool{"X": true, "Y": true},
+			evaluationArgs:    map[string]bool{"X": false, "Y": true},
+			expectsEvalError:  false,
+		},
+		{
+			name:              "mix variables and values but missing args",
+			input:             "mux(X,Y,1)",
+			expectsErr:        false,
+			expectedResult:    []bool{false},
+			expectedVariables: map[string]bool{"X": true, "Y": true},
+			evaluationArgs:    map[string]bool{"A": false},
+			expectsEvalError:  true,
 		},
 		{
 			name:       "invalid gate name",
@@ -172,7 +229,16 @@ func TestParsingAndEvaluation(t *testing.T) {
 				t.Errorf("Expression's variable set wasn't as expected. Got %v, expected %v", gotVariables, tc.expectedVariables)
 			}
 
-			got := expr.Evaluate()
+			got, err := expr.Evaluate(tc.evaluationArgs)
+			if tc.expectsEvalError {
+				if err == nil {
+					t.Errorf("Was expecting an error evaluating expression but didn't get any for input %v", tc.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("Expression evaluation encountered unexpected error for input %v. Error: %v", tc.input, err)
+			}
 			if !reflect.DeepEqual(got, tc.expectedResult) {
 				t.Errorf("Expression.Evaluate() = %v, expected %v", got, tc.expectedResult)
 			}
