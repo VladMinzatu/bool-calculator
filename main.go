@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	fmt.Println(evaluation.GenerateCombinations(3))
+	fmt.Println(evaluation.Compute("mux(and(1, not(X)), Y, 0)"))
 }
