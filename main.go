@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/VladMinzatu/bool-calculator/evaluation"
+	"github.com/VladMinzatu/bool-calculator/cmd"
 )
 
 func main() {
-	fmt.Println(evaluation.Compute("mux(and(1, not(X)), Y, 0)"))
+	cmd.RunRepl()
 }
