@@ -179,6 +179,11 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr: true,
 		},
 		{
+			name:       "expression cut after (",
+			input:      "not(",
+			expectsErr: true,
+		},
+		{
 			name:       "missing arguments with variables",
 			input:      "and(X)",
 			expectsErr: true,

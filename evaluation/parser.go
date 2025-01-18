@@ -58,6 +58,9 @@ type parser struct {
 
 func (p *parser) parse(variableCollector VariableSet) (Expression, error) {
 	p.pos++
+	if p.pos >= len(p.tokens) {
+		return nil, errors.New("unexpected end of string encountered")
+	}
 	tok := p.tokens[p.pos]
 
 	switch tok.tokenType {

@@ -42,39 +42,41 @@ func RunRepl() {
 			continue
 		}
 
-		if len(result.Variables) == 0 {
-			// just print the result
-			for i, val := range result.Outputs[0] {
-				if i > 0 {
-					fmt.Print(outputSpacing)
-				}
-				fmt.Print(boolValueStr(val))
-			}
-			fmt.Println()
-			continue
-		}
+		fmt.Print(result.String())
 
-		// We have variables, so we'll print all possible assignments:
-		// Print header
-		for _, v := range result.Variables {
-			fmt.Printf("%s\t", v)
-		}
-		fmt.Printf("Output\n")
+		// 	if len(result.Variables) == 0 {
+		// 		// just print the result
+		// 		for i, val := range result.Outputs[0] {
+		// 			if i > 0 {
+		// 				fmt.Print(outputSpacing)
+		// 			}
+		// 			fmt.Print(boolValueStr(val))
+		// 		}
+		// 		fmt.Println()
+		// 		continue
+		// 	}
 
-		// Print assignments
-		for i := 0; i < len(result.Assignments); i++ {
-			for _, val := range result.Assignments[i] {
-				fmt.Printf("%s\t", boolValueStr(val))
-			}
+		// 	// We have variables, so we'll print all possible assignments:
+		// 	// Print header
+		// 	for _, v := range result.Variables {
+		// 		fmt.Printf("%s\t", v)
+		// 	}
+		// 	fmt.Printf("Output\n")
 
-			for idx, val := range result.Outputs[i] {
-				if idx > 0 {
-					fmt.Print(outputSpacing)
-				}
-				fmt.Printf("%s", boolValueStr(val))
-			}
-			fmt.Println()
-		}
+		// 	// Print assignments
+		// 	for i := 0; i < len(result.Assignments); i++ {
+		// 		for _, val := range result.Assignments[i] {
+		// 			fmt.Printf("%s\t", boolValueStr(val))
+		// 		}
+
+		// 		for idx, val := range result.Outputs[i] {
+		// 			if idx > 0 {
+		// 				fmt.Print(outputSpacing)
+		// 			}
+		// 			fmt.Printf("%s", boolValueStr(val))
+		// 		}
+		// 		fmt.Println()
+		// 	}
 	}
 }
 

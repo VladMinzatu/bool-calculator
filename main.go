@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	cmd.RunRepl()
+	cmd.TerminalApp{}.Run()
 }

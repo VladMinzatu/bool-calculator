@@ -1,9 +1,64 @@
 package evaluation
 
+import (
+	"sort"
+	"strings"
+)
+
 type Result struct {
 	Variables   []string
 	Outputs     [][]bool
 	Assignments [][]bool
+}
+
+func (r Result) String() string {
+	outputSpacing := "  "
+
+	var sb strings.Builder
+
+	if len(r.Variables) == 0 {
+		// just print the result
+		for i, val := range r.Outputs[0] {
+			if i > 0 {
+				sb.WriteString(outputSpacing)
+			}
+			sb.WriteString(boolToString(val))
+		}
+		sb.WriteString("\n")
+		return sb.String()
+	}
+
+	// Print header
+	for _, v := range r.Variables {
+		sb.WriteString(v)
+		sb.WriteString("\t")
+	}
+	sb.WriteString("Output\n")
+
+	// Print assignments
+	for i := 0; i < len(r.Assignments); i++ {
+		for _, val := range r.Assignments[i] {
+			sb.WriteString(boolToString(val))
+			sb.WriteString("\t")
+		}
+
+		for idx, val := range r.Outputs[i] {
+			if idx > 0 {
+				sb.WriteString(outputSpacing)
+			}
+			sb.WriteString(boolToString(val))
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
+func boolToString(val bool) string {
+	if val {
+		return "1"
+	}
+	return "0"
 }
 
 func Compute(expression string) (*Result, error) {
@@ -54,6 +109,7 @@ func getVarsSlice(vars map[string]bool) []string {
 	for v, _ := range vars {
 		result = append(result, v)
 	}
+	sort.Strings(result)
 	return result
 }
 
