@@ -44,7 +44,7 @@ func ParseExpression(input string) (Expression, VariableSet, error) {
 
 	parser := parser{tokens: tokens, pos: -1}
 	variableSet := map[string]bool{}
-	expression, err := parser.parse(variableSet)
+	expression, err := parser.parse(variableSet, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,7 +56,7 @@ type parser struct {
 	pos    int
 }
 
-func (p *parser) parse(variableCollector VariableSet) (Expression, error) {
+func (p *parser) parse(variableCollector VariableSet, isRoot bool /*Sorry, Uncle Bob*/) (Expression, error) {
 	p.pos++
 	if p.pos >= len(p.tokens) {
 		return nil, errors.New("unexpected end of string encountered")
@@ -71,25 +71,25 @@ func (p *parser) parse(variableCollector VariableSet) (Expression, error) {
 		variableCollector[tok.literal] = true
 		return &VariableExpression{variableName: tok.literal}, nil
 	case TokenNot:
-		exprs, err := p.parseArgs(1, variableCollector)
+		exprs, err := p.parseArgs(1, variableCollector, isRoot)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &NotExpression{expression: exprs[0]}, nil
 	case TokenNand, TokenAnd, TokenOr, TokenXor:
-		exprs, err := p.parseArgs(2, variableCollector)
+		exprs, err := p.parseArgs(2, variableCollector, isRoot)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &BinaryExpression{tok.tokenType, exprs}, nil
 	case TokenMux:
-		exprs, err := p.parseArgs(3, variableCollector)
+		exprs, err := p.parseArgs(3, variableCollector, isRoot)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
 		return &MuxExpression{exprs}, nil
 	case TokenDmux:
-		exprs, err := p.parseArgs(2, variableCollector)
+		exprs, err := p.parseArgs(2, variableCollector, isRoot)
 		if err != nil {
 			return nil, argsError(tok, err)
 		}
@@ -104,7 +104,7 @@ func argsError(tok Token, err error) error {
 	return fmt.Errorf("error parsing arguments for %s gate: %w", tok.literal, err)
 }
 
-func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet) ([]Expression, error) {
+func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet, isRoot bool) ([]Expression, error) {
 	err := p.expect(TokenLparan)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet) ([
 
 	result := []Expression{}
 	for expectedInputs > 0 {
-		expr, err := p.parse(variableCollector)
+		expr, err := p.parse(variableCollector, false)
 		if err != nil {
 			return nil, err
 		}
@@ -134,6 +134,10 @@ func (p *parser) parseArgs(expectedInputs int, variableCollector VariableSet) ([
 	err = p.expect(TokenRparan)
 	if err != nil {
 		return nil, err
+	}
+
+	if isRoot && p.pos != len(p.tokens)-1 {
+		return nil, errors.New("tokens found after root gate expression ended. Remove text following the root expression's closing paran")
 	}
 
 	return result, nil

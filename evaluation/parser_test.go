@@ -199,6 +199,16 @@ func TestParsingAndEvaluation(t *testing.T) {
 			expectsErr: true,
 		},
 		{
+			name:       "more than one root expression",
+			input:      "and(1,0), not(1)",
+			expectsErr: true,
+		},
+		{
+			name:       "more than one root expression v2",
+			input:      "and(1,0) X",
+			expectsErr: true,
+		},
+		{
 			name:       "too many arguments with variables",
 			input:      "and(1,X,1)",
 			expectsErr: true,
