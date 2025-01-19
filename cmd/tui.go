@@ -13,6 +13,7 @@ import (
 
 var (
 	errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
+	gap        = "\n\n"
 )
 
 type TerminalApp struct{}
@@ -38,7 +39,7 @@ func NewModel() model {
 	ti.Placeholder = "Enter a boolean expression..."
 	ti.Focus()
 	ti.CharLimit = 256
-	ti.Width = 50
+	ti.Width = 256
 
 	ta := textarea.New()
 	ta.Placeholder = "Output will appear here..."
@@ -63,6 +64,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.output.SetWidth(msg.Width)
+		m.output.SetHeight(msg.Height - 2*lipgloss.Height(gap) - 1) // 1 for input
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
@@ -82,7 +86,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.err == nil {
 		m.output.SetValue(m.result.String())
 	} else {
-		m.err = fmt.Errorf("* %v", m.err)
+		m.err = fmt.Errorf("*%v", m.err)
 		m.output.SetValue("")
 	}
 
@@ -95,13 +99,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var b strings.Builder
 
-	b.WriteString("Enter boolean expression:\n\n")
+	b.WriteString("Enter boolean expression:")
+	b.WriteString(gap)
 	b.WriteString(m.input.View())
-	b.WriteString("\n\n")
+	b.WriteString(gap)
 
 	if m.err != nil {
 		b.WriteString(errorStyle.Render(m.err.Error()))
-		b.WriteString("\n\n")
+		b.WriteString(gap)
 	} else {
 		b.WriteString("Result:\n")
 		b.WriteString(m.output.View())
@@ -117,8 +122,4 @@ func (m *model) validateInput() error {
 	m.result = result
 	m.err = err
 	return err
-}
-
-func (m *model) processValidInput(input string) string {
-	return m.result.String()
 }
