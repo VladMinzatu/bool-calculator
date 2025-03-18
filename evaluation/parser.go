@@ -16,7 +16,7 @@ type Expression interface {
 	Evaluate(args map[string]bool) ([]bool, error)
 }
 
-type VariableSet map[string]bool
+type VariableSet map[string]struct{}
 
 func ParseExpression(input string) (Expression, VariableSet, error) {
 	tokens, err := ParseTokens(input)
@@ -43,7 +43,7 @@ func ParseExpression(input string) (Expression, VariableSet, error) {
 	}
 
 	parser := parser{tokens: tokens, pos: -1}
-	variableSet := map[string]bool{}
+	variableSet := map[string]struct{}{}
 	expression, err := parser.parse(variableSet, true)
 	if err != nil {
 		return nil, nil, err
@@ -68,7 +68,7 @@ func (p *parser) parse(variableCollector VariableSet, isRoot bool /*Sorry, Uncle
 		value := tok.literal == "1"
 		return &LiteralExpression{value: value}, nil
 	case TokenVariable:
-		variableCollector[tok.literal] = true
+		variableCollector[tok.literal] = struct{}{}
 		return &VariableExpression{variableName: tok.literal}, nil
 	case TokenNot:
 		exprs, err := p.parseArgs(1, variableCollector, isRoot)

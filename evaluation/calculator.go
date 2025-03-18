@@ -104,7 +104,7 @@ func generateCombinations(n int) [][]bool {
 	return result
 }
 
-func getVarsSlice(vars map[string]bool) []string {
+func getVarsSlice(vars VariableSet) []string {
 	result := []string{}
 	for v, _ := range vars {
 		result = append(result, v)
