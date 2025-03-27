@@ -28,14 +28,14 @@ func ParseExpression(input string) (Expression, VariableSet, error) {
 		return nil, nil, fmt.Errorf("empty expression cannot be evaluated")
 	}
 
-	gateTokens := map[TokenType]bool{
-		TokenNand: true,
-		TokenNot:  true,
-		TokenAnd:  true,
-		TokenOr:   true,
-		TokenXor:  true,
-		TokenMux:  true,
-		TokenDmux: true,
+	gateTokens := map[TokenType]struct{}{
+		TokenNand: {},
+		TokenNot:  {},
+		TokenAnd:  {},
+		TokenOr:   {},
+		TokenXor:  {},
+		TokenMux:  {},
+		TokenDmux: {},
 	}
 
 	if _, ok := gateTokens[tokens[0].tokenType]; !ok && len(tokens) > 1 {
